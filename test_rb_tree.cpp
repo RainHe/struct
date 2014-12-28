@@ -28,8 +28,6 @@ int main(int argc, char *argv[])
     rbtree.insert(f);
     rbtree.insert(g);
     rbtree.getAll(rbtree.head);
-    RBTree<int>::Node * node = rbtree.search_node_sort(5);
-    cout << "node key : " << *node->key << " node size : " << node->size << endl;
     return 0;
 }
 

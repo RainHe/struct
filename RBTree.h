@@ -1,7 +1,9 @@
 #ifndef RB_TREE_H
 #define RB_TREE_H
 #include <iostream>
+using namespace std;
 template<class Key> class RBTree {
+public:
     enum Color {
         RED,BLACK
     };
@@ -25,11 +27,14 @@ public:
     void transplant(Node *des, Node*src);
     Node *successor(Node *node);
     Node *search_node(Key *key);
+    Node *insert_search_node(Key *key);
+    Node *remove_search_node(Node *node, Key *key);
     void insert(Key *key);
     void insert_fixup(Node *node);
-    void remove(Key *key);
+    int remove(Key *key);
     void remove_fixup(Node *node);
     void getAll(Node *node);
+    
     ~RBTree();
 };
 
@@ -101,7 +106,6 @@ template<class Key> void RBTree<Key>::rotate_left(Node *node) {
             node->parent = gp;
             gp->left = node;
         }
-        
     }
     
 }
@@ -123,7 +127,6 @@ template<class Key> void RBTree<Key>::rotate_right(Node *node) {
             node->parent = gp;
             gp->left = node;
         }
-        
     }
     
 }
@@ -145,7 +148,6 @@ template<class Key> typename RBTree<Key>::Node *RBTree<Key>::successor(Node *key
         return parent;
     }
 }
-
 template<class Key> typename RBTree<Key>::Node *RBTree<Key>::search_node(Key *key) {
     if (key != NULL) {
         if (head == NULL) {
@@ -178,6 +180,57 @@ template<class Key> typename RBTree<Key>::Node *RBTree<Key>::search_node(Key *ke
     }
     return NULL;
 }
+template<class Key> typename RBTree<Key>::Node *RBTree<Key>::insert_search_node(Key *key) {
+    if (key != NULL) {
+        if (head == NULL) {
+            return nil;
+        }
+        Node *node = head;
+        while(node != nil) {
+            if (node->key != NULL) {
+                Key *compared_key = node->key;
+                if (*compared_key > *key) {
+                    if (node->left->key != NULL) {
+                        node = node->left;
+                    } else {
+                        break;
+                    }
+                } else if (*compared_key < *key) {
+                    if (node->right->key != NULL) {
+                        node = node->right;
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            } else {
+                break;  
+            }
+        }
+        return node;
+    }
+    return NULL;
+}
+
+template<class Key> typename RBTree<Key>::Node *RBTree<Key>::remove_search_node(Node *start, Key *key) {
+    Node *tmp = nil;
+    if (start == NULL && start == nil) {
+        return nil;
+    }
+    if (start->key == NULL || key == NULL) {
+        return nil;
+    }
+    if (*start->key == *key) {
+        tmp = start;
+    } else if (*start->key > *key) {
+        tmp = remove_search_node(start->left, key);
+    } else {
+        tmp = remove_search_node(start->right, key);
+    }
+    return tmp;
+    
+}
 
 template<class Key> void RBTree<Key>::insert(Key *key) {
     if (key != NULL) {
@@ -185,7 +238,7 @@ template<class Key> void RBTree<Key>::insert(Key *key) {
         node->right = nil;
         node->left = nil;
         node->key = key;
-        Node *search_node = this->search_node(key);
+        Node *search_node = this->insert_search_node(key);
         if (search_node == nil) {
             node->color = BLACK;
             node->parent = nil;
@@ -208,7 +261,7 @@ template<class Key> void RBTree<Key>::insert(Key *key) {
 }
 
 template<class Key> void RBTree<Key>::insert_fixup(Node *node) {
-    while(node != nil && node != head) {
+    while(node != nil && node != head && node->parent->color == RED) {
         Node *ucle = node->getUcle();
         if (ucle != NULL && ucle->color == RED) {
             ucle->color = BLACK;
@@ -255,87 +308,100 @@ template<class Key> void RBTree<Key>::transplant(Node *des, Node *src) {
     }
 }
 
-template<class Key> void RBTree<Key>::remove(Key *key) {
+template<class Key> int RBTree<Key>::remove(Key *key) {
     if (key != NULL) {
-        Node *node = search_node(key);
-        Node *replace = NULL,*replaced_child = NULL;
-        if (node != nil && *node->key == *key) {
-            
-            if (node->left == nil) {
-                node->key = node->right->key;
-                node->right = nil;
-            } else if (node->right == nil) {
-                node->key = node->left->key;
-                node->left = nil;
+        Node *element = remove_search_node(head,key);
+        if (element == nil) {
+            return -1;
+        }
+        if (element == head && element->left == nil && element->right == nil) {
+            head = nil;
+            return 0;
+        }
+        Node *deleted = nil;
+        if (element->left == nil && element->right != nil) {
+            deleted = element->right;
+        } else if (element->left != nil && element->right == nil) {
+            deleted = element->left;
+        } else if (element->left == nil && element->right ==nil) {
+            deleted = element;
+        } else {
+            deleted = successor(element);
+            cout << "successor key is : " << *deleted->key << endl;
+        }
+        Node *child = nil;
+        if (deleted->right != nil) {
+            child = deleted->right;
+            Node *deleted_parent = deleted->parent;
+            if (deleted == deleted_parent->right) {
+                deleted_parent->right = child;
             } else {
-                Node *successor_node = successor(node);
-                Color pColor = successor_node->color;
-                node->key = successor_node->key;
-                replaced_child = successor_node->right;
-                replaced_child->parent = successor_node->parent;
-                if (successor_node == successor_node->parent->left) {
-                    successor_node->left = replaced_child;
-                } else {
-                    successor_node->right = replaced_child;
-                }
-                if (pColor == BLACK) {
-                    remove_fixup(replaced_child);
-                }
+                deleted_parent->left = child;
+            }
+            child->parent = deleted_parent;
+        } else {
+            child = deleted;
+        }
+        element->key = child->key;
+        if (deleted->color == BLACK) {
+            remove_fixup(child);
+        }
+        if (child == deleted) {
+            Node *child_parent = child->parent;
+            if (child == child_parent->right) {
+                child_parent->right = nil;
+            } else {
+                child_parent->left = nil;
             }
         }
+        return 0;
     }
+    return -1;
 }
 
 template<class Key> void RBTree<Key>::remove_fixup(Node *node) {
-    while(node->color != RED && node != head) {
+    while (node != head && node->color == BLACK) {
         Node *brother = node->getBrother();
-        if (node == node->parent->right){
+        cout << "brother key is : " << *brother->key << endl;
+        if (node == node->parent->left) {
             if (brother->color == RED) {
-                node->parent->color = RED;
                 brother->color = BLACK;
-                rotate_right(brother);
-                brother = node->parent->left;
-            }
-            if (brother->left != nil && brother->right != nil) {
-                if (brother->left->color == BLACK && brother->right->color == BLACK) {
-                    node = node->parent;
-                    brother->color= RED;
-                } else if (brother->left->color == BLACK) {
-                    brother->right->color = BLACK;
-                    brother->color = RED;
-                    rotate_left(brother->right);
-                    brother = node->getBrother();
-                } else {
-                    brother->color = node->parent->color;
-                    node->parent->color = BLACK;
-                    brother->left->color = BLACK;
-                    rotate_right(brother);
-                    node = head;
-                }
-            }
-            
-        } else {
-            if (brother->color == RED) {
                 node->parent->color = RED;
-                brother->color = BLACK;
                 rotate_left(brother);
-                brother = node->parent->right;
-            }
-            if (brother->left != nil && brother->right != nil) {
+            } else {
                 if (brother->left->color == BLACK && brother->right->color == BLACK) {
+                    brother->color = RED;
                     node = node->parent;
-                    brother->color= RED;
                 } else if (brother->right->color == BLACK) {
                     brother->left->color = BLACK;
                     brother->color = RED;
                     rotate_right(brother->left);
-                    brother = node->getBrother();
                 } else {
                     brother->color = node->parent->color;
                     node->parent->color = BLACK;
                     brother->right->color = BLACK;
                     rotate_left(brother);
-                    node = head;
+                    break;
+                }
+            }
+        } else {
+            if (brother->color == RED) {
+                brother->color = BLACK;
+                rotate_right(brother);
+            } else {
+                if (brother->left->color == BLACK && brother->right->color == BLACK) {
+                    brother->color = RED;
+                    node = node->parent;
+                } else if (brother->left->color == BLACK) {
+                    brother->right->color = BLACK;
+                    brother->color = RED;
+                    rotate_left(brother->right);
+                } else {
+                    brother->color = node->parent->color;
+                    node->parent->color = BLACK;
+                    brother->left->color = BLACK;
+                    rotate_right(brother);
+                    break;
                 }
             }
         }
