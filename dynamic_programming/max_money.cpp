@@ -33,14 +33,22 @@ int *max_money(int *price, int max) {
 
 }
 
+void print_plan(int *max_position, int max) {
+    if (max > 0) {
+        int position = max_position[max - 1];
+        cout << " split size : " << position + 1 << endl;
+        print_plan(max_position, max-position-1);
+    }
+}
 int main(int argc, char *argv[])
 {
     //int prices[10] = {1,5,8,9,10,17,17,20,24,30};
+    int n = 6;
     int prices[10] = {2,6,7,9,10,17,17,20,24,30};
-    int *max_position = max_money(prices,10);
-    for (int i = 0; i<10; i++) {
+    int *max_position = max_money(prices,n);
+    for (int i = 0; i<n; i++) {
         cout << max_position[i] << endl;
     }
-    
+    print_plan(max_position,n);
     return 0;
 }
