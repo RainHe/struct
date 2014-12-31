@@ -12,8 +12,6 @@ int **sequency_list(int *sequency, const int length) {
         for (int j = 0; j < length; j++) {
             max[i][j] = 0;
         }
-
-        
     }
     int **position = new int*[length];
     //fill(position,position+length,new int[length]);
@@ -22,8 +20,6 @@ int **sequency_list(int *sequency, const int length) {
         for (int j = 0; j < length; j++) {
             position[i][j] = 0;
         }
-
-        
     }
     for (int l=1; l<length; l++) {
         int i = 0;
@@ -45,10 +41,25 @@ int **sequency_list(int *sequency, const int length) {
     return position;
     
 }
+
+void print_position(int **position, int start, int end, const char *sequency_char) {
+    //cout << "start" << start << " end  " << end << endl;
+    if (start == end) {
+        cout << sequency_char[start];
+    }else {
+        cout << "(";
+        int p = position[start][end];
+        print_position(position,start,p, sequency_char);
+        print_position(position,p+1,end, sequency_char);
+        cout << ")";
+    } 
+    
+}
 int main(int argc, char *argv[])
 {
     int n = 10;
     int sequency[] = {10,5,3,4,3,6,4,5,3,8};
+    const char *sequency_chars = "ABCDEFGHI";
     int **position = sequency_list(sequency,n - 1);
     cout << "****************************************" << endl;
     for(int i = 0; i<n-1; i++) {
@@ -57,5 +68,6 @@ int main(int argc, char *argv[])
         }
 
     }
+    print_position(position, 0, n-2, sequency_chars);
     return 0;
 }
